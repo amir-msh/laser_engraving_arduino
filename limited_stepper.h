@@ -104,6 +104,7 @@ class LimitedStepper {
             
             Serial.println("stepMotor() => offset : " + String(offset));
             stepsToMove = abs(stepsToMove);
+            int retries = 0;
             for (int i = 0; i < stepsToMove; i++)
             {
                 if(isAtBeginning()){
@@ -111,6 +112,9 @@ class LimitedStepper {
                     if(switchDirection == rotationDirection){
                         offset = 0;
                         break;
+                    }
+                    else{
+                        if(retries++>=100) break;
                     }
                 }
                 // if (hasReachedMaxStep()){
