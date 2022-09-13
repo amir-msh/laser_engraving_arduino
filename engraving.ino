@@ -19,17 +19,8 @@ SoftwareSerial btSerial(btRxPin, btTxPin);
 #define btNormalTimeout 750
 #define btFindingTimeout 100
 #define btDataTimeout 5000
-#define steppersRPM 3
+#define steppersRPM 5
 #define isDebugMode true
-
-// enum EngravingMode {
-//   rasterBlackWhite,
-//   rasterGrayscale,
-//   liveControl,
-//   idle,
-// };
-
-// EngravingMode currentMode = idle;
 
 enum ReportType {
   general,
@@ -54,13 +45,14 @@ const byte showReportsLength = sizeof(showReports) / sizeof(showReports[0]);
 
 void report(String text, ReportType reportType = general, bool btReport = true) {
   if(showReportsLength==0) return;
-
-  for (int i = 0; i < showReportsLength; i++) {
+  static byte i;
+  for (i = 0; i < showReportsLength; i++) {
     if (showReports[i] == (byte)reportType) break;
     else if (i == (showReportsLength - 1)) return;
   }
 
-  String preText = "(" + String(millis()) + " ms) ";
+  static String preText = "";
+  preText = "(" + String(millis()) + " ms) ";
   switch (reportType) {
     case general:
       preText += "[General] : ";
@@ -83,19 +75,14 @@ void report(String text, ReportType reportType = general, bool btReport = true) 
   }
 }
 
-// String engravingModeToCode(EngravingMode mode){
-//   switch (mode)
-//   {
-//     case rasterBlackWhite: return "rb";
-//     case rasterGrayscale: return "rg";
-//     case liveControl: return "live";
-//     case idle: return "idle";
-//     default: return "";
-//   }
-// }
-
 void sendBtConfirmation(){
-  btSerial.print(btMessageStartChar + "done" + btMessageEndChar + btMessageTerminatorChar);
+  report("Sending done message ...");
+  delay(100);
+  if(isBtConnected())
+  {
+    static String doneMessage = String(btMessageStartChar) + "done" + String(btMessageEndChar) + String(btMessageTerminatorChar);
+    btSerial.print(doneMessage);
+  }
 }
 
 void initLaser() {
@@ -116,8 +103,10 @@ void initSteppers() {
   yStepper.calibrate();
   
   // verival :
-  xStepper.moveToDeg(55.0);
-  yStepper.moveToDeg(21.5);
+  xStepper.moveToDeg(61.0);
+  yStepper.moveToDeg(30);
+  // xStepper.moveToDeg(55.0);
+  // yStepper.moveToDeg(21.5);
   
   // center :
   // xStepper.moveToDeg(76.53);
@@ -125,6 +114,10 @@ void initSteppers() {
   
   xStepper.setAsOrigin();
   yStepper.setAsOrigin();
+
+  // setLaser(1);
+  // delay(1000);
+  // setLaser(0);
 }
 
 void initShockSensor() {
@@ -155,7 +148,8 @@ void onShockDetected() {
 // OK
 /// Reads a command from the bluetooth serial buffer (command format = "#{command}\r\n" )
 String readBtCommand() {
-  String cmd = btSerial.readStringUntil(btMessageTerminatorChar);
+  static String cmd;
+  cmd = btSerial.readStringUntil(btMessageTerminatorChar);
   int start = cmd.indexOf(btMessageStartChar);
   int end = cmd.indexOf(btMessageEndChar, 1);
   if(start == -1 || end == -1){
@@ -167,7 +161,8 @@ String readBtCommand() {
 
 /// Clears buffer excess (control charaters and spacing characters)
 void clearBtBufferExcess() {
-  char c = ' ';
+  static char c;
+  c = ' ';
   while(btSerial.available()) {
     c = btSerial.peek();
     if(c!='#' && (isControl(c) || isSpace(c) || !isAlphaNumeric(c)))
@@ -219,7 +214,7 @@ void selectEngravingMode(String cmd){
     onLiveModeSelected();
   }
   else{
-    report("mode is not valid", error);
+    report("Mode is not valid", error);
   }
 }
 
@@ -275,9 +270,8 @@ void onLiveModeSelected(){
           }
           delay(10);
 
-          report("xServo Degree : " + String(xStepper.getAngle()));
-          report("yServo Degree : " + String(yStepper.getAngle()));
-          report("____________________________");
+          report("xServo Degree : " + String(xStepper.getAngle()), info);
+          report("yServo Degree : " + String(yStepper.getAngle()) + "\n____________________________", info);
         }
         else if(mode.equals("laser")){
           btSerial.setTimeout(btNormalTimeout);
@@ -333,7 +327,7 @@ void onIdleModeSelected(){
 //   if(autoTurnOff) setLaser(0);
 // }
 
-void engraveRasterBlackWhiteBuffer(uint8_t* buffer, unsigned long bufferSize, unsigned long imgWidth, unsigned long initialPixelIndex = 0) {
+bool engraveRasterBlackWhiteBuffer(uint8_t* buffer, unsigned long bufferSize, unsigned long imgWidth, unsigned long initialPixelIndex = 0) {
   unsigned long bufIndex = 0;
   unsigned long nextOffset = 0;
   unsigned long x=0, y=0, pixelIndex=initialPixelIndex;
@@ -346,8 +340,8 @@ void engraveRasterBlackWhiteBuffer(uint8_t* buffer, unsigned long bufferSize, un
   
   const double distanceMultiplier = 1.9;
   const double xDistanceFromTarget = 6 * distanceMultiplier;
-  // const double yDistanceFromTarget = 6 * distanceMultiplier + (3.5);
-  const double yDistanceFromTarget = 8 * distanceMultiplier;
+  const double yDistanceFromTarget = 6 * distanceMultiplier + 1.75; // pre : 1.5
+  // const double yDistanceFromTarget = 8 * distanceMultiplier;
   const double xLength = 3.;
   const double yLength = 3.;
 
@@ -357,40 +351,42 @@ void engraveRasterBlackWhiteBuffer(uint8_t* buffer, unsigned long bufferSize, un
   unsigned long lastY = 0;
 
   // <test>
-  for (unsigned int y = 0; y < imgWidth; y++)
-  {
-    for (unsigned int x = 0; x < imgWidth; x++)
-    {
-      dx = (((double)x / ((double)imgWidth-1.0)) * xLength) + xTranslate;
-      dy = (((double)y / ((double)imgWidth-1.0)) * yLength) + yTranslate;
+  // for (unsigned int y = 0; y < imgWidth; y++)
+  // {
+  //   for (unsigned int x = 0; x < imgWidth; x++)
+  //   {
+  //     dx = (((double)x / ((double)imgWidth-1.0)) * xLength) + xTranslate;
+  //     dy = (((double)y / ((double)imgWidth-1.0)) * yLength) + yTranslate;
 
-      xDeg = degrees(atan2(dx, xDistanceFromTarget));
-      yDeg = degrees(atan2(dy, yDistanceFromTarget));
+  //     xDeg = degrees(atan2(dx, xDistanceFromTarget));
+  //     yDeg = degrees(atan2(dy, yDistanceFromTarget));
       
-      if(y!=lastY){
-        report("(y!=lastY) == true");
-        setLaser(0);
-      }
-      lastY = y;
+  //     if(y!=lastY){
+  //       report("(y!=lastY) == true");
+  //       setLaser(0);
+  //     }
+  //     lastY = y;
 
-      xStepper.moveToDeg(xDeg);
-      yStepper.moveToDeg(yDeg);
-      setLaser(1);
+  //     xStepper.moveToDeg(xDeg);
+  //     yStepper.moveToDeg(yDeg);
+  //     setLaser(1);
 
-      report("* x=" + String(x) + ", y=" + String(y));
-      report("* xDeg=" + String(xDeg) + ", yDeg=" + String(yDeg) + "\n------------------------------");
+  //     report("* x=" + String(x) + ", y=" + String(y));
+  //     report("* xDeg=" + String(xDeg) + ", yDeg=" + String(yDeg) + "\n------------------------------");
 
-      // delay(10);
-    }    
-  }
-  setLaser(0);
-  xStepper.stepToDegree(0);
-  yStepper.stepToDegree(0);
-  return;
+  //     delay(1);
+  //   }    
+  // }
+  // setLaser(0);
+  // xStepper.stepToDegree(0);
+  // yStepper.stepToDegree(0);
+  // return;
   // </test>
   
   for (unsigned long offset = 0; bufIndex < bufferSize; offset++, bufIndex = offset/8)
   {
+    if(!isBtConnected()) return false;
+
     pixelIndex = offset + initialPixelIndex;
     x = pixelIndex % imgWidth;
     y = pixelIndex / imgWidth;
@@ -416,10 +412,15 @@ void engraveRasterBlackWhiteBuffer(uint8_t* buffer, unsigned long bufferSize, un
 
     setLaser(bit);
 
-    report("* x=" + String(x) + ", y=" + String(y));
-    report("* xDeg=" + String(xDeg) + ", yDeg=" + String(yDeg) + "\n------------------------------");
+    report("* x=" + String(x) + ", y=" + String(y), info);
+    report("* xDeg=" + String(xDeg) + ", yDeg=" + String(yDeg) + "\n------------------------------", info);
 
-    delay(500);
+    // if((bool)bit) {
+    //   delay(20);
+    // }
+    // else{
+    //   delay(1);
+    // }
     //
     
     // before :
@@ -435,24 +436,27 @@ void engraveRasterBlackWhiteBuffer(uint8_t* buffer, unsigned long bufferSize, un
     // }
   }
   setLaser(0);
-  report("engraveRasterBlackWhiteBuffer() => end");
+  report("engraveRasterBlackWhiteBuffer() => end", event);
+  return true;
 }
 
 void onRasterBlackWhiteModeSelected(unsigned long imageWidth, unsigned long bufferSize){
-  sendBtConfirmation();
   // currentMode = rasterBlackWhite;
   report("onRasterBlackWhiteModeSelected(" + String(imageWidth) + ", " + String(bufferSize) + ")", event);
+  sendBtConfirmation();
   unsigned long packetNumber = 0;
   uint8_t rasterBuffer[bufferSize];
   while(isBtConnected()){
     if(btSerial.available()){
       if(readData(rasterBuffer, bufferSize)){
-        engraveRasterBlackWhiteBuffer(
+        if(engraveRasterBlackWhiteBuffer(
           rasterBuffer,
           bufferSize,
           imageWidth,
           (packetNumber++ * bufferSize) * 8
-        );
+        )) {
+          sendBtConfirmation();
+        }
         // packetNumber++;
       }
       else continue;
@@ -498,8 +502,8 @@ void onBtDisconnected(){
 
 void setup() {
   Serial.begin(9600);
-  delay(50);
   initBluetooth();
+  report("setup()", event);
   initSpeaker(speakerPin);
   onMusic();
   pinMode(speakerPin, OUTPUT);

@@ -68,7 +68,7 @@ class LimitedStepper {
         void calibrate(){
             delay(50);
             uint32_t currentStepDelay = stepDelay;
-            setSpeedRPM(1);
+            setSpeedRPM(2); // 1
             setRotationDirection(switchDirection);
             
             while(!isAtBeginning())
@@ -102,7 +102,7 @@ class LimitedStepper {
             bool isDirectionCW = stepsToMove<0;
             setRotationDirection(static_cast<RotationDirection>(isDirectionCW));
             
-            Serial.println("stepMotor() => offset : " + String(offset));
+            // Serial.println("stepMotor() => offset : " + String(offset));
             stepsToMove = abs(stepsToMove);
             int retries = 0;
             for (int i = 0; i < stepsToMove; i++)
@@ -137,7 +137,7 @@ class LimitedStepper {
                 // }
             }
             if(isAtBeginning()) offset = 0;
-            Serial.println("stepMotor() (finish) => offset : " + String(offset));
+            // Serial.println("stepMotor() (finish) => offset : " + String(offset));
         }
 
         double stepToDegree(int step){
