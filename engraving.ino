@@ -1,7 +1,7 @@
 #include <SoftwareSerial.h>
 #include "limited_stepper.h"
 #include "pitches.h"
-#include "musics.h"
+#include "sound_player.h"
 #include "pins.h"
 
 #define servoStepsPerRevolution 2038*8
@@ -15,6 +15,7 @@ LimitedStepper xStepper(servoStepsPerRevolution, xStepperStepPin, xStepperDirPin
 LimitedStepper yStepper(servoStepsPerRevolution, yStepperStepPin, yStepperDirPin, yStepperSwitchPin);
 
 SoftwareSerial btSerial(btRxPin, btTxPin);
+SoundPlayer soundPlayer(speakerPin);
 
 #define btNormalTimeout 750
 #define btFindingTimeout 100
@@ -43,7 +44,7 @@ const byte showReports[] = { };
 
 const byte showReportsLength = sizeof(showReports) / sizeof(showReports[0]); 
 
-void report(String text, ReportType reportType = general, bool btReport = true) {
+void report(String text, ReportType reportType = general, bool btReport = false) {
   if(showReportsLength==0) return;
   static byte i;
   for (i = 0; i < showReportsLength; i++) {
@@ -103,7 +104,7 @@ void initSteppers() {
   yStepper.calibrate();
   
   // verical :
-  xStepper.moveToDeg(28);
+  xStepper.moveToDeg(23);
   yStepper.moveToDeg(15);
   // xStepper.moveToDeg(55.0);
   // yStepper.moveToDeg(21.5);
@@ -115,9 +116,9 @@ void initSteppers() {
   xStepper.setAsOrigin();
   yStepper.setAsOrigin();
 
-  setLaser(1);
-  delay(1000);
-  setLaser(0);
+  // setLaser(1);
+  // delay(1000);
+  // setLaser(0);
 }
 
 void initShockSensor() {
@@ -199,17 +200,17 @@ void selectEngravingMode(String cmd){
       cmd.substring(arg1End + 1, arg2End).toInt()
     );
   }
-  else if(mode.equals("rg")){
-    int arg1End = cmd.indexOf(',', openPrIndex + 1);
-    if(arg1End <= openPrIndex + 1) return;
-    int arg2End = cmd.indexOf(')', arg1End + 1);
-    if(arg2End < arg1End + 1) return;
+  // else if(mode.equals("rg")){
+  //   int arg1End = cmd.indexOf(',', openPrIndex + 1);
+  //   if(arg1End <= openPrIndex + 1) return;
+  //   int arg2End = cmd.indexOf(')', arg1End + 1);
+  //   if(arg2End < arg1End + 1) return;
 
-    onRasterGrayscaleModeSelected(
-      cmd.substring(openPrIndex + 1, arg1End).toInt(),
-      cmd.substring(arg1End + 1, arg2End).toInt()
-    );
-  }
+  //   onRasterGrayscaleModeSelected(
+  //     cmd.substring(openPrIndex + 1, arg1End).toInt(),
+  //     cmd.substring(arg1End + 1, arg2End).toInt()
+  //   );
+  // }
   else if(mode.equals("live")){
     onLiveModeSelected();
   }
@@ -307,25 +308,8 @@ bool readData(uint8_t* rasterBuffer, const unsigned long bufferSize){
 }
 
 void onIdleModeSelected(){
-  // currentMode = idle;
   report("onIdleModeSelected()", event);
 }
-
-// void engravePoint(unsigned long x, unsigned long y, unsigned long imgWidth, byte power = 255, bool autoTurnOff = true) {
-//   double xDegree = fractionalOffsetToDegree(((double)x)/(double)imgWidth);
-//   double yDegree = fractionalOffsetToDegree(((double)y)/(double)imgWidth);
-  
-//   // if(xDegree>180) xDegree = 360 - xDegree;
-//   // if(yDegree>180) yDegree = 360 - yDegree;
-
-//   report("engravePoint() : x=" + String(x) + ", y=" + String(y) + ", xDegree=" + String(xDegree) + ", yDegree=" + String(yDegree) + "\n");
-
-//   // moveServosSync(xDegree, yDegree);
-  
-//   setLaser(1);
-//   delay(map(power,0,255,250,1000));
-//   if(autoTurnOff) setLaser(0);
-// }
 
 bool engraveRasterBlackWhiteBuffer(uint8_t* buffer, unsigned long bufferSize, unsigned long imgWidth, unsigned long initialPixelIndex = 0) {
   unsigned long bufIndex = 0;
@@ -335,12 +319,12 @@ bool engraveRasterBlackWhiteBuffer(uint8_t* buffer, unsigned long bufferSize, un
   double xDeg=0, yDeg=0;
   
   report("engraveRasterBlackWhiteBuffer() => bufferSize="+String(bufferSize));
-  xStepper.setSpeedRPH(28);
-  yStepper.setSpeedRPH(28);
+  xStepper.setSpeedRPH(23);
+  yStepper.setSpeedRPH(23);
   
   const double distanceMultiplier = 1.9;
   const double xDistanceFromTarget = 6 * distanceMultiplier;
-  const double yDistanceFromTarget = 6 * distanceMultiplier + 3; // pre : 2
+  const double yDistanceFromTarget = 6 * distanceMultiplier + 6; // pre : 2
   // const double yDistanceFromTarget = 8 * distanceMultiplier;
   const double xLength = 3.;
   const double yLength = 3.;
@@ -349,39 +333,6 @@ bool engraveRasterBlackWhiteBuffer(uint8_t* buffer, unsigned long bufferSize, un
   double yTranslate = 1;
 
   unsigned long lastY = 0;
-
-  // <test>
-  // for (unsigned int y = 0; y < imgWidth; y++)
-  // {
-  //   for (unsigned int x = 0; x < imgWidth; x++)
-  //   {
-  //     dx = (((double)x / ((double)imgWidth-1.0)) * xLength) + xTranslate;
-  //     dy = (((double)y / ((double)imgWidth-1.0)) * yLength) + yTranslate;
-
-  //     xDeg = degrees(atan2(dx, xDistanceFromTarget));
-  //     yDeg = degrees(atan2(dy, yDistanceFromTarget));
-      
-  //     if(y!=lastY){
-  //       report("(y!=lastY) == true");
-  //       setLaser(0);
-  //     }
-  //     lastY = y;
-
-  //     xStepper.moveToDeg(xDeg);
-  //     yStepper.moveToDeg(yDeg);
-  //     setLaser(1);
-
-  //     report("* x=" + String(x) + ", y=" + String(y));
-  //     report("* xDeg=" + String(xDeg) + ", yDeg=" + String(yDeg) + "\n------------------------------");
-
-  //     delay(1);
-  //   }    
-  // }
-  // setLaser(0);
-  // xStepper.stepToDegree(0);
-  // yStepper.stepToDegree(0);
-  // return;
-  // </test>
   
   for (unsigned long offset = 0; bufIndex < bufferSize; offset++, bufIndex = offset/8)
   {
@@ -415,14 +366,6 @@ bool engraveRasterBlackWhiteBuffer(uint8_t* buffer, unsigned long bufferSize, un
     report("* x=" + String(x) + ", y=" + String(y), info);
     report("* xDeg=" + String(xDeg) + ", yDeg=" + String(yDeg) + "\n------------------------------", info);
 
-    // if((bool)bit) {
-    //   delay(20);
-    // }
-    // else{
-    //   delay(1);
-    // }
-    //
-    
     // before :
     // nextOffset = offset+1;
     // bool nextBit = false;
@@ -465,21 +408,15 @@ void onRasterBlackWhiteModeSelected(unsigned long imageWidth, unsigned long buff
   }
 }
 
-/// offset : offset from left-top corner (0.0<=offset<=1.0)
-// double fractionalOffsetToDegree(double offset, double height) {
-//   return round(atan2(offset, height) * 180 / PI);
-//   // return round(atan2(1.0, (offset - 0.5)*2) * 180 / PI);
+// void onRasterGrayscaleModeSelected(int imageWidth, int bufferSize) {
+//   sendBtConfirmation();
+//   // currentMode = rasterGrayscale;
+//   report("onRasterGrayscaleModeSelected(" + String(imageWidth) + ", " + String(bufferSize) + ")", event);
 // }
-
-void onRasterGrayscaleModeSelected(int imageWidth, int bufferSize) {
-  sendBtConfirmation();
-  // currentMode = rasterGrayscale;
-  report("onRasterGrayscaleModeSelected(" + String(imageWidth) + ", " + String(bufferSize) + ")", event);
-}
 
 void onBtConnected(){
   report("onBtConnected()", event);
-  pairMusic();
+  soundPlayer.bluetoothConnectSound();
   delay(300);
   String cmd = "";
   while(isBtConnected()){
@@ -496,7 +433,7 @@ void onBtConnected(){
 
 void onBtDisconnected(){
   report("onBtDisconnected()", event);
-  unpairMusic();
+  soundPlayer.bluetoothDisconnectSound();
   delay(250);
 }
 
@@ -504,13 +441,11 @@ void setup() {
   Serial.begin(38400);
   initBluetooth();
   report("setup()", event);
-  initSpeaker(speakerPin);
-  onMusic();
-  pinMode(speakerPin, OUTPUT);
+  soundPlayer.deviceOnSound();
   initLaser();
   initShockSensor();
   initSteppers();
-  startMusic();
+  soundPlayer.deviceStartSound();
   delay(750);
 }
 
