@@ -102,9 +102,9 @@ void initSteppers() {
   xStepper.calibrate();
   yStepper.calibrate();
   
-  // verival :
-  xStepper.moveToDeg(61.0);
-  yStepper.moveToDeg(30);
+  // verical :
+  xStepper.moveToDeg(28);
+  yStepper.moveToDeg(15);
   // xStepper.moveToDeg(55.0);
   // yStepper.moveToDeg(21.5);
   
@@ -115,9 +115,9 @@ void initSteppers() {
   xStepper.setAsOrigin();
   yStepper.setAsOrigin();
 
-  // setLaser(1);
-  // delay(1000);
-  // setLaser(0);
+  setLaser(1);
+  delay(1000);
+  setLaser(0);
 }
 
 void initShockSensor() {
@@ -335,12 +335,12 @@ bool engraveRasterBlackWhiteBuffer(uint8_t* buffer, unsigned long bufferSize, un
   double xDeg=0, yDeg=0;
   
   report("engraveRasterBlackWhiteBuffer() => bufferSize="+String(bufferSize));
-  xStepper.setSpeedRPH(30);
-  yStepper.setSpeedRPH(30);
+  xStepper.setSpeedRPH(28);
+  yStepper.setSpeedRPH(28);
   
   const double distanceMultiplier = 1.9;
   const double xDistanceFromTarget = 6 * distanceMultiplier;
-  const double yDistanceFromTarget = 6 * distanceMultiplier + 1.75; // pre : 1.5
+  const double yDistanceFromTarget = 6 * distanceMultiplier + 3; // pre : 2
   // const double yDistanceFromTarget = 8 * distanceMultiplier;
   const double xLength = 3.;
   const double yLength = 3.;
@@ -501,7 +501,7 @@ void onBtDisconnected(){
 }
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(38400);
   initBluetooth();
   report("setup()", event);
   initSpeaker(speakerPin);
