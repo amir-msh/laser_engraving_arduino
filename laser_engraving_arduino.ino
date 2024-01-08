@@ -126,7 +126,7 @@ void initShockSensor() {
   attachInterrupt(digitalPinToInterrupt(shockSensorPin), onShockDetected, FALLING);
 }
 
-void initBluetooth(){
+void initBluetooth() {
   pinMode(btRxPin, INPUT);
   pinMode(btTxPin, OUTPUT);
   pinMode(btStatePin, INPUT);
@@ -449,7 +449,7 @@ void setup() {
   delay(750);
 }
 
-// OK
+// TODO: semantic versioning & compatibility matrix & tagging & change log file
 void loop() {
   if (isBtConnected()){
     onBtConnected();
