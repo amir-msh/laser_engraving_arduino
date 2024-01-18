@@ -29,9 +29,9 @@ class LimitedStepper {
             setRotationDirection(CW);
         }
         
-        // RotationDirection getRotationDirection(){
-        //     return rotationDirection;
-        // }
+        RotationDirection getRotationDirection(){
+            return rotationDirection;
+        }
 
         double getAngle(){
             return stepToDegree(offset);
@@ -68,7 +68,7 @@ class LimitedStepper {
         void calibrate(){
             delay(50);
             uint32_t currentStepDelay = stepDelay;
-            setSpeedRPM(2); // 1
+            setSpeedRPM(2);
             setRotationDirection(switchDirection);
             
             while(!isAtBeginning())
@@ -102,13 +102,11 @@ class LimitedStepper {
             bool isDirectionCW = stepsToMove<0;
             setRotationDirection(static_cast<RotationDirection>(isDirectionCW));
             
-            // Serial.println("stepMotor() => offset : " + String(offset));
             stepsToMove = abs(stepsToMove);
             int retries = 0;
             for (int i = 0; i < stepsToMove; i++)
             {
                 if(isAtBeginning()){
-                    // offset = 0;
                     if(switchDirection == rotationDirection){
                         offset = 0;
                         break;
@@ -117,27 +115,10 @@ class LimitedStepper {
                         if(retries++>=100) break;
                     }
                 }
-                // if (hasReachedMaxStep()){
-                //     Serial.println("hasReachedMaxStep()");
-                //     break;
-                // }
                 step();
                 offset += isDirectionCW? -1: 1;
-                // if(lastPercentage!=(int)((100L*(long)i)/(long)stepsToMove)) {
-                //     lastPercentage=(uint16_t)((100L*(long)i)/(long)stepsToMove);
-                //     if(lastPercentage%20==0){
-                //         Serial.println(String(lastPercentage) + "% - step num = " + String(i+1));
-                //     }
-                // }
-                // else if( i == stepsToMove-1){
-                //     Serial.println("100% - step num = " + String(i+1));
-                // }
-                // if(isAtBeginning()){
-                //     offset = 0;
-                // }
             }
             if(isAtBeginning()) offset = 0;
-            // Serial.println("stepMotor() (finish) => offset : " + String(offset));
         }
 
         double stepToDegree(int step){
@@ -149,9 +130,7 @@ class LimitedStepper {
         }
 
         void moveDeg(double deg){
-            // Serial.println(String(deg) + "deg => " + String(degreeToStep(deg)) + " step");
             stepMotor(degreeToStep(deg));
-            // Serial.println("Stepping finished for " + String(deg) + "\n______________________________");
         }
         
         void moveToDeg(double targetDeg){

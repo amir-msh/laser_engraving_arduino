@@ -103,22 +103,11 @@ void initSteppers() {
   xStepper.calibrate();
   yStepper.calibrate();
   
-  // verical :
   xStepper.moveToDeg(23);
   yStepper.moveToDeg(15);
-  // xStepper.moveToDeg(55.0);
-  // yStepper.moveToDeg(21.5);
-  
-  // center :
-  // xStepper.moveToDeg(76.53);
-  // yStepper.moveToDeg(25.83);
   
   xStepper.setAsOrigin();
   yStepper.setAsOrigin();
-
-  // setLaser(1);
-  // delay(1000);
-  // setLaser(0);
 }
 
 void initShockSensor() {
@@ -200,17 +189,6 @@ void selectEngravingMode(String cmd){
       cmd.substring(arg1End + 1, arg2End).toInt()
     );
   }
-  // else if(mode.equals("rg")){
-  //   int arg1End = cmd.indexOf(',', openPrIndex + 1);
-  //   if(arg1End <= openPrIndex + 1) return;
-  //   int arg2End = cmd.indexOf(')', arg1End + 1);
-  //   if(arg2End < arg1End + 1) return;
-
-  //   onRasterGrayscaleModeSelected(
-  //     cmd.substring(openPrIndex + 1, arg1End).toInt(),
-  //     cmd.substring(arg1End + 1, arg2End).toInt()
-  //   );
-  // }
   else if(mode.equals("live")){
     onLiveModeSelected();
   }
@@ -221,7 +199,6 @@ void selectEngravingMode(String cmd){
 
 void onLiveModeSelected(){
   sendBtConfirmation();
-  // currentMode = rasterBlackWhite;
   report("onLiveModeSelected()", event);
   String moveTo = "";
   String xMove = "";
@@ -324,8 +301,7 @@ bool engraveRasterBlackWhiteBuffer(uint8_t* buffer, unsigned long bufferSize, un
   
   const double distanceMultiplier = 1.9;
   const double xDistanceFromTarget = 6 * distanceMultiplier;
-  const double yDistanceFromTarget = 6 * distanceMultiplier + 6; // pre : 2
-  // const double yDistanceFromTarget = 8 * distanceMultiplier;
+  const double yDistanceFromTarget = 6 * distanceMultiplier + 6;
   const double xLength = 3.;
   const double yLength = 3.;
 
@@ -365,18 +341,6 @@ bool engraveRasterBlackWhiteBuffer(uint8_t* buffer, unsigned long bufferSize, un
 
     report("* x=" + String(x) + ", y=" + String(y), info);
     report("* xDeg=" + String(xDeg) + ", yDeg=" + String(yDeg) + "\n------------------------------", info);
-
-    // before :
-    // nextOffset = offset+1;
-    // bool nextBit = false;
-    // if((nextOffset/8)+1 < bufferSize){
-    //   nextBit = bitRead(buffer[(nextOffset/8)+1], 7-(nextOffset%8));
-    // }
-
-    // report("\nbufIndex=" + String(bufIndex) + "\nbuffer[bufIndex]=" + String(buffer[bufIndex],BIN) + ", bit=" + String(bit));
-    // if(bit){
-    //   engravePoint(x, y, imgWidth, 255, !nextBit);
-    // }
   }
   setLaser(0);
   report("engraveRasterBlackWhiteBuffer() => end", event);
@@ -384,7 +348,6 @@ bool engraveRasterBlackWhiteBuffer(uint8_t* buffer, unsigned long bufferSize, un
 }
 
 void onRasterBlackWhiteModeSelected(unsigned long imageWidth, unsigned long bufferSize){
-  // currentMode = rasterBlackWhite;
   report("onRasterBlackWhiteModeSelected(" + String(imageWidth) + ", " + String(bufferSize) + ")", event);
   sendBtConfirmation();
   unsigned long packetNumber = 0;
@@ -400,19 +363,12 @@ void onRasterBlackWhiteModeSelected(unsigned long imageWidth, unsigned long buff
         )) {
           sendBtConfirmation();
         }
-        // packetNumber++;
       }
       else continue;
     }
     delay(10);
   }
 }
-
-// void onRasterGrayscaleModeSelected(int imageWidth, int bufferSize) {
-//   sendBtConfirmation();
-//   // currentMode = rasterGrayscale;
-//   report("onRasterGrayscaleModeSelected(" + String(imageWidth) + ", " + String(bufferSize) + ")", event);
-// }
 
 void onBtConnected(){
   report("onBtConnected()", event);
@@ -453,9 +409,10 @@ void setup() {
 void loop() {
   if (isBtConnected()){
     onBtConnected();
-    /// Wait till bluetooth gets disconnected
+    // Wait till bluetooth gets disconnected
     while(isBtConnected()) delay(100);
     onBtDisconnected();
   }
   delay(66);
 }
+
