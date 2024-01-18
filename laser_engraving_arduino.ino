@@ -46,13 +46,13 @@ const byte showReportsLength = sizeof(showReports) / sizeof(showReports[0]);
 
 void report(String text, ReportType reportType = general, bool btReport = false) {
   if(showReportsLength==0) return;
-  static byte i;
+  byte i;
   for (i = 0; i < showReportsLength; i++) {
     if (showReports[i] == (byte)reportType) break;
     else if (i == (showReportsLength - 1)) return;
   }
 
-  static String preText = "";
+  String preText = "";
   preText = "(" + String(millis()) + " ms) ";
   switch (reportType) {
     case general:
@@ -138,7 +138,7 @@ void onShockDetected() {
 // OK
 /// Reads a command from the bluetooth serial buffer (command format = "#{command}\r\n" )
 String readBtCommand() {
-  static String cmd;
+  String cmd;
   cmd = btSerial.readStringUntil(btMessageTerminatorChar);
   int start = cmd.indexOf(btMessageStartChar);
   int end = cmd.indexOf(btMessageEndChar, 1);
@@ -151,7 +151,7 @@ String readBtCommand() {
 
 /// Clears buffer excess (control charaters and spacing characters)
 void clearBtBufferExcess() {
-  static char c;
+  char c;
   c = ' ';
   while(btSerial.available()) {
     c = btSerial.peek();
