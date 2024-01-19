@@ -136,7 +136,7 @@ void onShockDetected() {
 }
 
 // OK
-/// Reads a command from the bluetooth serial buffer (command format = "#{command}\r\n" )
+// Reads a command from the bluetooth serial buffer (command format = "#{command}\r\n" )
 String readBtCommand() {
   String cmd;
   cmd = btSerial.readStringUntil(btMessageTerminatorChar);
@@ -149,7 +149,7 @@ String readBtCommand() {
   return cmd.substring(start+1,end);
 }
 
-/// Clears buffer excess (control charaters and spacing characters)
+// Clears buffer excess (control charaters and spacing characters)
 void clearBtBufferExcess() {
   char c;
   c = ' ';
@@ -161,7 +161,7 @@ void clearBtBufferExcess() {
   }
 }
 
-/// Clears anything left inside of the bluetooth serial buffer
+// Clears anything left inside of the bluetooth serial buffer
 void clearBtBuffer(){
   while(btSerial.available()) btSerial.read();
 }
