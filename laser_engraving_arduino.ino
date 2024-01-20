@@ -4,15 +4,15 @@
 #include "sound_player.h"
 #include "pins.h"
 
-#define servoStepsPerRevolution 2038*8
+#define stepperStepsPerRevolution 2038*8
 
 // btMessage format = "#command\r\n"
 #define btMessageStartChar '#'
 #define btMessageEndChar '\r'
 #define btMessageTerminatorChar '\n'
 
-LimitedStepper xStepper(servoStepsPerRevolution, xStepperStepPin, xStepperDirPin, xStepperSwitchPin);
-LimitedStepper yStepper(servoStepsPerRevolution, yStepperStepPin, yStepperDirPin, yStepperSwitchPin);
+LimitedStepper xStepper(stepperStepsPerRevolution, xStepperStepPin, xStepperDirPin, xStepperSwitchPin);
+LimitedStepper yStepper(stepperStepsPerRevolution, yStepperStepPin, yStepperDirPin, yStepperSwitchPin);
 
 SoftwareSerial btSerial(btRxPin, btTxPin);
 SoundPlayer soundPlayer(speakerPin);
